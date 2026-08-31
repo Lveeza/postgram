@@ -11,6 +11,9 @@ use App\Http\Controllers\StatusController;
 
 use App\Models\User;
 
+Route::get('/', function () {
+    return redirect('/login');
+});
 
 Route::get('/register', function () {
     return view('auth.register');
@@ -29,14 +32,14 @@ Route::post('/register', function (Request $request) {
         'password' => $validated['password'],
     ]);
 
-    return redirect('/')->with('success', 'Registration successful! Please log in.');
+    return redirect('/login')->with('success', 'Registration successful! Please log in.');
 });
 
-Route::get('/', function () {
+Route::get('/login', function () {
     return view('auth.login');
 });
 
-Route::post('/', function (Request $request) {
+Route::post('/login', function (Request $request) {
     $credentials = $request->validate([
         'email' => 'required|email',
         'password' => 'required',
@@ -56,7 +59,7 @@ Route::post('/logout', function (Request $request) {
     Auth::logout();
     $request->session()->invalidate();
     $request->session()->regenerateToken();
-    return redirect('/');
+    return redirect('/login');
 });
 
 Route::get('/status', [StatusController::class, 'index']);
