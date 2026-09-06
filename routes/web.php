@@ -79,3 +79,4 @@ Route::put('/comments/{comment}', [CommentController::class, 'update'])->middlew
 Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->middleware('auth.check');
 
 Route::get('/api/posts', [PostController::class, 'apiIndex']);
+Route::get('/api/posts/{post}', [PostController::class, 'apiShow']);

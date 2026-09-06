@@ -44,7 +44,7 @@
             </div>
 
             @if($post->image_path)
-            <img src="{{ asset('storage/' . $post->image_path) }}" alt="{{ $post->title }}"
+            <img src="{{ Str::startsWith($post->image_path, 'http') ? $post->image_path : asset('storage/' . $post->image_path) }}" alt="{{ $post->title }}"
                 class="w-full aspect-square object-cover">
             @endif
 

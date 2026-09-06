@@ -72,4 +72,10 @@ class PostController extends Controller
     {
         return PostResource::collection(Post::with('user')->get());
     }
+
+    public function apiShow(Post $post)
+    {
+        $post->load('comments.user');
+        return new PostResource($post);
+    }
 }

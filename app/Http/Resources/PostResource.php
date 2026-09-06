@@ -21,7 +21,9 @@ class PostResource extends JsonResource
             'body' => $this->body,
             'author' => $this->user->name,
             'created_at' => $this->created_at->diffForHumans(),
-            'image_url' => $this->image_path ? asset('storage/' . $this->image_path) : null,
+            'image_url' => $this->image_path
+                ? (str_starts_with($this->image_path, 'http') ? $this->image_path : asset('storage/' . $this->image_path))
+                : null,
             'comments' => CommentResource::collection($this->whenLoaded('comments')),
         ];
     }
