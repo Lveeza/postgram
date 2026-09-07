@@ -16,7 +16,7 @@ class CommentResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'content' => $this->body, // adjust to match your actual column name
+            'content' => $this->content,
             'author' => $this->whenLoaded('user', fn() => $this->user->name),
             'created_at' => $this->created_at?->diffForHumans(),
         ];
