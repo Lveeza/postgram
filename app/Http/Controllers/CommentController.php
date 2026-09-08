@@ -2,18 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Post;
 use App\Models\Comment;
+use App\Http\Requests\StoreCommentRequest;
 use App\Http\Requests\UpdateCommentRequest;
 
 class CommentController extends Controller
 {
-    public function store(Request $request, Post $post)
+    public function store(StoreCommentRequest $request, Post $post)
     {
-        $validated = $request->validate([
-            'content' => 'required|string',
-        ]);
+        $validated = $request->validated();
 
         $post->comments()->create([
             'content' => $validated['content'],
@@ -31,7 +29,6 @@ class CommentController extends Controller
 
     public function update(UpdateCommentRequest $request, Comment $comment)
     {
-        $this->authorize('update', $comment);
         $validated = $request->validated();
 
         $comment->update([
