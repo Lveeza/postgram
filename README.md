@@ -1,59 +1,86 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Postagram
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+An Instagram-style social posting application built with Laravel, featuring a full web app and a separate REST API with token-based authentication.
 
-## About Laravel
+**Live demo:** [https://your-app.up.railway.app](https://your-app.up.railway.app)
+**API documentation:** [API.md](./API.md)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Features
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Authentication & Authorization** — session-based auth for the web app, Sanctum token auth for the API, with Policy-based authorization enforced consistently across both
+- **Posts & Comments** — create, edit, delete, with image uploads and pagination
+- **Search & Filtering** — search posts by title or body
+- **REST API** — full CRUD for posts and comments, scoped token abilities, rate limiting
+- **Email Notifications** — post owners are emailed when someone comments, sent via a queued listener so it never blocks the request
+- **N+1 Query Optimization** — eager loading throughout, verified via query logging
+- **Database Transactions** — post creation/deletion wrapped in transactions to keep a denormalized `posts_count` counter in sync
+- **API Resources** — consistent JSON response shapes via `PostResource` / `CommentResource`
+- **Automated Tests** — Pest test suite covering web routes, API auth, token abilities, and rate limiting
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Tech Stack
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+| Layer      | Technology                                    |
+| ---------- | --------------------------------------------- |
+| Backend    | PHP 8.x, Laravel 11                           |
+| Database   | MySQL                                         |
+| Auth       | Laravel Sanctum (API), Session Auth (Web)     |
+| Frontend   | Blade, Tailwind CSS                           |
+| Queue      | Database driver                               |
+| Email      | Resend (production), Mailtrap (local testing) |
+| Testing    | Pest                                          |
+| Deployment | Railway (GitHub auto-deploy)                  |
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Architecture Notes
 
-### Premium Partners
+This project was built as a learning exercise progressing from vanilla PHP fundamentals through to Laravel, with an emphasis on understanding _why_ the framework is structured the way it is rather than treating it as a black box. Notably:
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+- The **Repository pattern** used for post listing/search was first hand-built in plain PHP before being reimplemented in Laravel — the abstraction is the same, only the implementation changed.
+- **Authorization logic lives in Policies**, not scattered across controllers — both the web and API controllers call the same `PostPolicy`/`CommentPolicy`, so authorization rules never drift out of sync between the two surfaces.
+- **Side effects (email notifications) are decoupled from the request cycle** via Events, Listeners, and queued jobs — a comment being created doesn't wait on an email being sent.
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Local Setup
 
-## Code of Conduct
+```bash
+git clone https://github.com/Lveeza/postgram.git
+cd postgram
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan storage:link
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Set your `MAIL_*` and `DB_*` credentials in `.env`, then:
 
-## Security Vulnerabilities
+```bash
+php artisan serve
+php artisan queue:work   # in a separate terminal, for queued email notifications
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
+
+## Running Tests
+
+```bash
+./vendor/bin/pest
+```
+
+---
+
+## API
+
+See [API.md](./API.md) for full endpoint documentation, including authentication, request/response examples, and rate limiting details.
+
+---
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Open-sourced for portfolio/educational purposes.
