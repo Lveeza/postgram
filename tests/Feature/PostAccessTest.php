@@ -164,7 +164,7 @@ test('searching for the string zero still filters correctly', function () {
     Post::factory()->create(['title' => '0', 'user_id' => $user->id]);
     Post::factory()->create(['title' => 'Something else', 'user_id' => $user->id]);
 
-    $response = $this . actingAs($user)->get('/posts?search=0');
+    $response = $this->actingAs($user)->get('/posts?search=0');
 
     $response->assertViewHas(
         'posts',

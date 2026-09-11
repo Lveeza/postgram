@@ -8,6 +8,8 @@ use App\Http\Requests\StorePostRequest;
 use App\Repositories\Contracts\PostRepositoryInterface;
 use App\Http\Requests\UpdatePostRequest;
 use App\Http\Resources\PostResource;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
@@ -25,12 +27,25 @@ class PostController extends Controller
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('posts', 'public');
         }
-        Post::create([
-            'title' => $validated['title'],
-            'body' => $validated['body'],
-            'user_id' => auth()->id(),
-            'image_path' => $imagePath,
-        ]);
+
+        try {
+            DB::transaction(function () use ($validated, $imagePath) {
+                Post::create([
+                    'title' => $validated['title'],
+                    'body' => $validated['body'],
+                    'user_id' => auth()->id(),
+                    'image_path' => $imagePath,
+                ]);
+
+                auth()->user()->increment('posts_count');
+            });
+        } catch (\Throwable $e) {
+            if ($imagePath) {
+                Storage::disk('public')->delete($imagePath);
+            }
+            throw $e;
+        }
+
 
         return redirect('/posts');
     }
@@ -63,18 +78,87 @@ class PostController extends Controller
     public function destroy(Post $post)
     {
         $this->authorize('delete', $post);
-        $post->delete();
+        DB::transaction(function () use ($post) {
+            $post->delete();
+            auth()->user()->decrement('posts_count');
+        });
         return redirect('/posts');
     }
 
-    public function apiIndex()
+    public function apiIndex(Request $request)
     {
-        return PostResource::collection(Post::with('user')->get());
+        $query = Post::with('user')->latest();
+
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('title', 'like', '%' . $searchTerm . '%')
+                    ->orWhere('body', 'like', '%' . $searchTerm . '%');
+            });
+        }
+
+        $posts = $query->paginate(5);
+
+        return PostResource::collection($posts);
     }
 
     public function apiShow(Post $post)
     {
         $post->load('comments.user');
         return new PostResource($post);
+    }
+
+    public function apiStore(StorePostRequest $request)
+    {
+        if (! $request->user()->tokenCan('posts:create')) {
+            return response()->json(['message' => 'Token does not have permission to create posts.'], 403);
+        }
+
+        $validated = $request->validated();
+
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('posts', 'public');
+        }
+
+        $post = DB::transaction(function () use ($request, $validated, $imagePath) {
+            $post = $request->user()->posts()->create([
+                'title' => $validated['title'],
+                'body' => $validated['body'],
+                'image_path' => $imagePath,
+            ]);
+            $request->user()->increment('posts_count');
+            return $post;
+        });
+
+        return response()->json(['message' => 'Post created successfully!', 'post' => $post], 201);
+    }
+
+    public function apiUpdate(UpdatePostRequest $request, Post $post)
+    {
+        if (! $request->user()->tokenCan('posts:update')) {
+            return response()->json(['message' => 'Token does not have permission.'], 403);
+        }
+        $this->authorize('update', $post);
+
+        $validated = $request->validated();
+        $post->update($validated);
+
+        return response()->json(['message' => 'Post updated successfully!', 'post' => $post], 200);
+    }
+
+    public function apiDestroy(Request $request, Post $post)
+    {
+        if (! $request->user()->tokenCan('posts:delete')) {
+            return response()->json(['message' => 'Token does not have permission.'], 403);
+        }
+        $this->authorize('delete', $post);
+
+        DB::transaction(function () use ($post) {
+            $post->delete();
+            $post->user->decrement('posts_count');
+        });
+
+        return response()->json(['message' => 'Post deleted successfully!'], 200);
     }
 }
