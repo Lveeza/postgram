@@ -2,7 +2,7 @@
 
 An Instagram-style social posting application built with Laravel, featuring a full web app and a separate REST API with token-based authentication.
 
-**Live demo:** [https://postgram-production-8430.up.railway.app/](https://your-app.up.railway.app)
+**Live demo:** [https://postgram-production-8430.up.railway.app/](https://postgram-production-8430.up.railway.app/)
 **API documentation:** [API.md](./API.md)
 
 ---
