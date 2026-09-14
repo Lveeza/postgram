@@ -10,6 +10,7 @@ use App\Http\Requests\UpdatePostRequest;
 use App\Http\Resources\PostResource;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 
 class PostController extends Controller
 {
@@ -17,8 +18,16 @@ class PostController extends Controller
     public function index(PostRepositoryInterface $posts)
     {
         $search = request('search');
-        return view('posts.index', ['posts' => $posts->paginate(10, $search)]);
+        $page = request('page', 1);
+        $cacheKey = "posts.page.{$page}.search.{$search}";
+
+        $paginatedPosts = Cache::tags(['posts'])->remember($cacheKey, 60, function () use ($posts, $search) {
+            return $posts->paginate(10, $search);
+        });
+
+        return view('posts.index', ['posts' => $paginatedPosts]);
     }
+
     public function store(StorePostRequest $request)
     {
         $validated = $request->validated();
@@ -47,6 +56,8 @@ class PostController extends Controller
         }
 
 
+        Cache::tags(['posts'])->flush();
+
         return redirect('/posts');
     }
 
@@ -65,12 +76,15 @@ class PostController extends Controller
 
     public function update(UpdatePostRequest $request, Post $post)
     {
+        $this->authorize('update', $post);
         $validated = $request->validated();
 
         $post->update([
             'title' => $validated['title'],
             'body' => $validated['body'],
         ]);
+
+        Cache::tags(['posts'])->flush();
 
         return redirect('/posts');
     }
@@ -82,26 +96,35 @@ class PostController extends Controller
             $post->delete();
             auth()->user()->decrement('posts_count');
         });
+        Cache::tags(['posts'])->flush();
+
         return redirect('/posts');
     }
 
+    // cache api posts
+
     public function apiIndex(Request $request)
     {
-        $query = Post::with('user')->latest();
+        $search = $request->search ?? 'none';
+        $page = $request->get('page', 1);
+        $cacheKey = "posts.api.page.{$page}.search.{$search}";
 
-        if ($request->has('search') && !empty($request->search)) {
-            $searchTerm = $request->search;
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('title', 'like', '%' . $searchTerm . '%')
-                    ->orWhere('body', 'like', '%' . $searchTerm . '%');
-            });
-        }
+        $posts = Cache::tags(['posts'])->remember($cacheKey, 60, function () use ($request) {
+            $query = Post::with('user')->latest();
 
-        $posts = $query->paginate(5);
+            if ($request->has('search') && !empty($request->search)) {
+                $searchTerm = $request->search;
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('title', 'like', '%' . $searchTerm . '%')
+                        ->orWhere('body', 'like', '%' . $searchTerm . '%');
+                });
+            }
+
+            return $query->paginate(5);
+        });
 
         return PostResource::collection($posts);
     }
-
     public function apiShow(Post $post)
     {
         $post->load('comments.user');
@@ -130,6 +153,7 @@ class PostController extends Controller
             $request->user()->increment('posts_count');
             return $post;
         });
+        Cache::tags(['posts'])->flush();
 
         return response()->json(['message' => 'Post created successfully!', 'post' => $post], 201);
     }
@@ -144,6 +168,7 @@ class PostController extends Controller
         $validated = $request->validated();
         $post->update($validated);
 
+        Cache::tags(['posts'])->flush();
         return response()->json(['message' => 'Post updated successfully!', 'post' => $post], 200);
     }
 
@@ -159,6 +184,7 @@ class PostController extends Controller
             $post->user->decrement('posts_count');
         });
 
+        Cache::tags(['posts'])->flush();
         return response()->json(['message' => 'Post deleted successfully!'], 200);
     }
 }
