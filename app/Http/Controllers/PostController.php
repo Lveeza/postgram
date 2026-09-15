@@ -105,29 +105,50 @@ class PostController extends Controller
 
     public function apiIndex(Request $request)
     {
-        $search = $request->search ?? 'none';
-        $page = $request->get('page', 1);
-        $cacheKey = "posts.api.page.{$page}.search.{$search}";
+        $search = $request->query('search');
+        $page = $request->query('page', 1);
 
-        $posts = Cache::tags(['posts'])->remember($cacheKey, 60, function () use ($request) {
-            $query = Post::with('user')->latest();
+        $userId = auth()->id() ?? 'guest';
+        $cacheTag = $search ? md5($search) : 'all';
+        $cacheKey = "posts.api.page.{$page}.search.{$cacheTag}.user.{$userId}";
 
-            if ($request->has('search') && !empty($request->search)) {
-                $searchTerm = $request->search;
-                $query->where(function ($q) use ($searchTerm) {
-                    $q->where('title', 'like', '%' . $searchTerm . '%')
-                        ->orWhere('body', 'like', '%' . $searchTerm . '%');
-                });
-            }
-
-            return $query->paginate(5);
+        $posts = Cache::tags(['posts'])->remember($cacheKey, 60, function () use ($search) {
+            return Post::with(['user' => function ($query) {
+                $query->withCount(['followers', 'following'])
+                    ->with(['following' => function ($q) {
+                        $q->where('followed_id', auth()->id());
+                    }]);
+            }])
+                ->withCount('likes')
+                ->with(['likes' => function ($query) {
+                    $query->where('user_id', auth()->id());
+                }])
+                ->when($search, function ($query, $search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('title', 'like', "%{$search}%")
+                            ->orWhere('body', 'like', "%{$search}%");
+                    });
+                })
+                ->latest()
+                ->paginate(5);
         });
 
         return PostResource::collection($posts);
     }
     public function apiShow(Post $post)
     {
-        $post->load('comments.user');
+        $post->load([
+            'user' => function ($query) {
+                $query->withCount(['followers', 'following'])
+                    ->with(['following' => function ($q) {
+                        $q->where('followed_id', auth()->id());
+                    }]);
+            },
+            'comments.user',
+            'likes' => function ($query) {
+                $query->where('user_id', auth()->id());
+            }
+        ])->loadCount('likes');
         return new PostResource($post);
     }
 

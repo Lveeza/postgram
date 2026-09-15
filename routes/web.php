@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\StatusController;
-
+use App\Http\Controllers\LikeController;
 
 
 use App\Models\User;
@@ -77,3 +77,7 @@ Route::delete('/posts/{post}', [PostController::class, 'destroy'])->middleware('
 Route::get('/comments/{comment}/edit', [CommentController::class, 'edit'])->middleware('auth.check');
 Route::put('/comments/{comment}', [CommentController::class, 'update'])->middleware('auth.check');
 Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->middleware('auth.check');
+
+Route::post('/posts/{post}/likes', [LikeController::class, 'toggle'])
+    ->middleware('auth')
+    ->name('posts.likes.toggle');
