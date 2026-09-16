@@ -10,7 +10,12 @@ use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-    // Handle User Registration & Return Token
+
+    public function user(Request $request)
+    {
+        return $request->user();
+    }
+
     public function register(Request $request)
     {
         $validated = $request->validate([

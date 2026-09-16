@@ -20,9 +20,7 @@ Route::get('/posts/{post}', [PostController::class, 'apiShow']);
 
 
 Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
+    Route::get('/user', [AuthController::class, 'user']);
 
     Route::post('/posts', [PostController::class, 'apiStore']);
     Route::put('/posts/{post}', [PostController::class, 'apiUpdate']);
