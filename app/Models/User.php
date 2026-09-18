@@ -74,4 +74,14 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(User::class, 'follows', 'followed_id', 'follower_id');
     }
+
+    public function stories()
+    {
+        return $this->hasMany(Story::class);
+    }
+
+    public function storyLikes()
+    {
+        return $this->hasMany(StoryLike::class);
+    }
 }

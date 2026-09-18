@@ -51,7 +51,14 @@ class AuthController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        $token = $user->createToken('auth_token', ['posts:create', 'posts:update', 'posts:delete'])->plainTextToken;
+        $token = $user->createToken('auth_token', [
+            'posts:create',
+            'posts:update',
+            'posts:delete',
+            'stories:create',
+            'stories:delete',
+        ])->plainTextToken;
+
 
         return response()->json([
             'message' => 'Login successful!',

@@ -21,9 +21,15 @@ class PostResource extends JsonResource
             'body' => $this->body,
             'author' => new UserResource($this->whenLoaded('user')),
             'created_at' => $this->created_at->diffForHumans(),
-            'image_url' => $this->image_path
-                ? (str_starts_with($this->image_path, 'http') ? $this->image_path : asset('storage/' . $this->image_path))
-                : null,
+            'media' => $this->whenLoaded('media', function () {
+                return $this->media->map(fn($item) => [
+                    'type' => $item->type,
+                    'content' => $item->type === 'text'
+                        ? $item->path
+                        : (str_starts_with($item->path, 'http') ? $item->path : asset('storage/' . $item->path)),
+                    'order' => $item->order,
+                ]);
+            }),
             'comments' => CommentResource::collection($this->whenLoaded('comments')),
             'likes_count' => $this->likes_count,
             'is_liked_by_user' => $this->likes->isNotEmpty(),

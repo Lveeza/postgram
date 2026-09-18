@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\PostController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\FollowController;
+use App\Http\Controllers\StoryController;
+use App\Http\Controllers\StoryLikeController;
+use App\Http\Controllers\StoryViewController;
 
 // Public authentication routes
 Route::post('/register', [AuthController::class, 'register'])
@@ -37,4 +39,10 @@ Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
 
     Route::post('users/{user}/follow', [FollowController::class, 'toggle'])
         ->name('users.follow.toggle');
+
+    Route::post('stories', [StoryController::class, 'store']);
+    Route::get('stories', [StoryController::class, 'index']);
+    Route::delete('stories/{story}', [StoryController::class, 'destroy']);
+    Route::post('stories/{story}/likes', [StoryLikeController::class, 'toggle']);
+    Route::post('/stories/{story}/views', [StoryViewController::class, 'store'])->middleware('auth:sanctum');
 });

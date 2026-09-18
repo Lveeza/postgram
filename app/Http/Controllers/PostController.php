@@ -119,6 +119,7 @@ class PostController extends Controller
                         $q->where('followed_id', auth()->id());
                     }]);
             }])
+                ->with('media')
                 ->withCount('likes')
                 ->with(['likes' => function ($query) {
                     $query->where('user_id', auth()->id());
@@ -145,6 +146,7 @@ class PostController extends Controller
                     }]);
             },
             'comments.user',
+            'media',
             'likes' => function ($query) {
                 $query->where('user_id', auth()->id());
             }
@@ -160,23 +162,35 @@ class PostController extends Controller
 
         $validated = $request->validated();
 
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('posts', 'public');
-        }
-
-        $post = DB::transaction(function () use ($request, $validated, $imagePath) {
+        $post = DB::transaction(function () use ($request, $validated) {
             $post = $request->user()->posts()->create([
                 'title' => $validated['title'],
                 'body' => $validated['body'],
-                'image_path' => $imagePath,
             ]);
+
+            foreach ($request->input('media', []) as $index => $item) {
+                $type = $item['type'];
+
+                if ($type === 'text') {
+                    $content = $item['content'];
+                } else {
+                    $content = $request->file("media.$index.content")->store('posts', 'public');
+                }
+
+                $post->media()->create([
+                    'type' => $type,
+                    'path' => $content,
+                    'order' => $index,
+                ]);
+            }
+
             $request->user()->increment('posts_count');
             return $post;
         });
+
         Cache::tags(['posts'])->flush();
 
-        return response()->json(['message' => 'Post created successfully!', 'post' => $post], 201);
+        return response()->json(['message' => 'Post created successfully!', 'post' => $post->load('media')], 201);
     }
 
     public function apiUpdate(UpdatePostRequest $request, Post $post)

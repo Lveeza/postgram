@@ -30,4 +30,9 @@ class Post extends Model
     {
         return $this->likes()->count();
     }
+
+    public function media()
+    {
+        return $this->hasMany(PostMedia::class)->orderBy('order');
+    }
 }
