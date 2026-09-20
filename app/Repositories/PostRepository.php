@@ -11,7 +11,8 @@ class PostRepository implements PostRepositoryInterface
     {
         return Post::with('user')
             ->when(filled($search), fn($query) => $query->where('title', 'like', "%{$search}%"))
-            ->latest()
-            ->paginate($perPage);
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
+            ->cursorPaginate($perPage);
     }
 }

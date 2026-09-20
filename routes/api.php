@@ -9,6 +9,7 @@ use App\Http\Controllers\FollowController;
 use App\Http\Controllers\StoryController;
 use App\Http\Controllers\StoryLikeController;
 use App\Http\Controllers\StoryViewController;
+use App\Http\Controllers\UserController;
 
 // Public authentication routes
 Route::post('/register', [AuthController::class, 'register'])
@@ -19,6 +20,9 @@ Route::post('/login', [AuthController::class, 'login'])
 
 Route::get('/posts', [PostController::class, 'apiIndex']);
 Route::get('/posts/{post}', [PostController::class, 'apiShow']);
+Route::get('users/{user}', [UserController::class, 'show']);
+Route::get('/users/{user}/posts', [PostController::class, 'apiByUser']);
+
 
 
 Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
