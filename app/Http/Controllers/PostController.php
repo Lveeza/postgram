@@ -11,58 +11,33 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-
+use App\Repositories\Contracts\PostRepositoryInterface;
 
 class PostController extends Controller
 {
 
+    protected PostRepositoryInterface $postRepository;
+
+    public function __construct(PostRepositoryInterface $postRepository)
+    {
+        $this->postRepository = $postRepository;
+    }
+
     public function apiIndex(Request $request)
     {
         $search = $request->query('search');
-        $cursor = $request->query('cursor', 1);
+        $cacheCursor = $request->query('cursor', 'first');
+        $authId = auth('sanctum')->id();
+        $userId = $authId ?? 'guest';
 
-        $userId = auth('sanctum')->id() ?? 'guest';
         $cacheTag = $search ? md5($search) : 'all';
-        $cacheKey = "posts.api.cursor.{$cursor}.search.{$cacheTag}.user.{$userId}";
+        $cacheKey = "posts.api.cursor.{$cacheCursor}.search.{$cacheTag}.user.{$userId}";
 
-        $posts = Cache::tags(['posts'])->remember($cacheKey, 60, function () use ($search) {
-            return Post::with(['user' => function ($query) {
-                $query->withCount(['posts', 'followers', 'following'])
-                    ->withIsFollowedByAuth(auth('sanctum')->id());
-            }])
-                ->with('media')
-                ->withCount('likes')
-                ->with(['likes' => function ($query) {
-                    $query->where('user_id', auth('sanctum')->id());
-                }])
-                ->when($search, function ($query, $search) {
-                    $query->where(function ($q) use ($search) {
-                        $q->where('title', 'like', "%{$search}%")
-                            ->orWhere('body', 'like', "%{$search}%");
-                    });
-                })
-                ->orderBy('created_at', 'desc')
-                ->orderBy('id', 'desc')
-                ->cursorPaginate(10);
+        $posts = Cache::tags(['posts'])->remember($cacheKey, 60, function () use ($search, $authId) {
+            return $this->postRepository->paginate(10, $search, $authId);
         });
 
         return PostResource::collection($posts);
-    }
-
-    public function apiShow(Post $post)
-    {
-        $post->load([
-            'user' => function ($query) {
-                $query->withCount(['posts', 'followers', 'following'])
-                    ->withIsFollowedByAuth(auth('sanctum')->id());
-            },
-            'comments.user',
-            'media',
-            'likes' => function ($query) {
-                $query->where('user_id', auth('sanctum')->id());
-            }
-        ])->loadCount('likes');
-        return new PostResource($post);
     }
 
     public function apiStore(StorePostRequest $request)

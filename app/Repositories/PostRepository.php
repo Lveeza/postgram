@@ -7,10 +7,31 @@ use App\Repositories\Contracts\PostRepositoryInterface;
 
 class PostRepository implements PostRepositoryInterface
 {
-    public function paginate(int $perPage = 10, ?string $search = null)
+    protected Post $model;
+
+    public function __construct(Post $model)
     {
-        return Post::with('user')
-            ->when(filled($search), fn($query) => $query->where('title', 'like', "%{$search}%"))
+        $this->model = $model;
+    }
+
+    public function paginate(int $perPage = 10, ?string $search = null, ?int $authUserId = null)
+    {
+        return $this->model->newQuery()
+            ->with(['user' => function ($query) use ($authUserId) {
+                $query->withCount(['posts', 'followers', 'following'])
+                    ->withIsFollowedByAuth($authUserId);
+            }])
+            ->with('media')
+            ->withCount('likes')
+            ->with(['likes' => function ($query) use ($authUserId) {
+                $query->where('user_id', $authUserId);
+            }])
+            ->when(filled($search), function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                        ->orWhere('body', 'like', "%{$search}%");
+                });
+            })
             ->orderBy('created_at', 'desc')
             ->orderBy('id', 'desc')
             ->cursorPaginate($perPage);
