@@ -8,9 +8,17 @@ use App\Models\Comment;
 use App\Http\Requests\StoreCommentRequest;
 use App\Http\Requests\UpdateCommentRequest;
 use App\Events\CommentCreated;
+use App\Http\Resources\CommentResource;
 
 class CommentController extends Controller
 {
+
+    public function apiIndex(Post $post)
+    {
+        $comments = $post->comments()->with('user')->orderBy('created_at')->get();
+        return CommentResource::collection($comments);
+    }
+
     public function apiStore(StoreCommentRequest $request, Post $post)
     {
         $validated = $request->validated();

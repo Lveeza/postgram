@@ -34,6 +34,7 @@ Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    Route::get('/posts/{post}/comments', [CommentController::class, 'apiIndex']);
     Route::post('/posts/{post}/comments', [CommentController::class, 'apiStore']);
     Route::put('/comments/{comment}', [CommentController::class, 'apiUpdate']);
     Route::delete('/comments/{comment}', [CommentController::class, 'apiDestroy']);

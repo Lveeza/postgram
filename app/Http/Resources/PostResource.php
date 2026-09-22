@@ -30,7 +30,7 @@ class PostResource extends JsonResource
                     'order' => $item->order,
                 ]);
             }),
-            'comments' => CommentResource::collection($this->whenLoaded('comments')),
+            'comments_count' => $this->comments_count,
             'likes_count' => $this->likes_count,
             'is_liked_by_user' => $this->likes->isNotEmpty(),
         ];

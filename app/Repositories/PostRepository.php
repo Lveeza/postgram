@@ -22,7 +22,7 @@ class PostRepository implements PostRepositoryInterface
                     ->withIsFollowedByAuth($authUserId);
             }])
             ->with('media')
-            ->withCount('likes')
+            ->withCount('likes', 'comments')
             ->with(['likes' => function ($query) use ($authUserId) {
                 $query->where('user_id', $authUserId);
             }])
