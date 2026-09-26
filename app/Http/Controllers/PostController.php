@@ -76,7 +76,13 @@ class PostController extends Controller
 
         Cache::tags(['posts'])->flush();
 
-        return response()->json(['message' => 'Post created successfully!', 'post' => $post->load('media')], 201);
+        $post->load(['media', 'user', 'likes']);
+        $post->loadCount(['likes', 'comments']);
+
+        return response()->json([
+            'message' => 'Post created successfully!',
+            'post' => new PostResource($post)
+        ], 201);
     }
 
     public function apiUpdate(UpdatePostRequest $request, Post $post)
@@ -113,6 +119,8 @@ class PostController extends Controller
     {
         $posts = $user->posts()
             ->with(['user' => fn($q) => $q->withCount(['posts', 'followers', 'following'])->withIsFollowedByAuth(auth('sanctum')->id())])
+            ->with('media')
+            ->with(['likes' => fn($q) => $q->where('user_id', auth('sanctum')->id())])
             ->withCount(['likes', 'comments'])
             ->orderBy('created_at', 'desc')
             ->orderBy('id', 'desc')

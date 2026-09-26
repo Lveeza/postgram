@@ -19,9 +19,11 @@ class StoryViewController extends Controller
 
         Cache::tags(['stories'])->flush();
 
+        $story->loadCount('views');
+
         return response()->json([
             'message' => 'Story view recorded successfully.',
-            'views_count' => $story->fresh()->views_count,
+            'views_count' => $story->views_count,
         ], 200);
     }
 }

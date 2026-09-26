@@ -27,6 +27,7 @@ Route::get('/users/{user}/posts', [PostController::class, 'apiByUser']);
 
 Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
+    Route::put('/user', [UserController::class, 'update']);
 
     Route::post('/posts', [PostController::class, 'apiStore']);
     Route::put('/posts/{post}', [PostController::class, 'apiUpdate']);

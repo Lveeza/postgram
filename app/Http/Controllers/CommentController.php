@@ -32,7 +32,8 @@ class CommentController extends Controller
 
         return response()->json([
             'message' => 'Comment added successfully!',
-            'comment' => $comment->load('user')
+            'comment_user' => $comment->load('user'),
+            'comment' => new CommentResource($comment)
         ], 201);
     }
 

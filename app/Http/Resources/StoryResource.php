@@ -26,6 +26,7 @@ class StoryResource extends JsonResource
             'likes_count' => (int) ($this->likes_count ?? 0),
             'views_count' => (int) ($this->views_count ?? 0),
             'is_liked_by_user' => $this->likes->isNotEmpty(),
+            'user_id' => $this->user_id,
         ];
     }
 }

@@ -23,7 +23,9 @@ class UserResource extends JsonResource
             'following_count' => $this->following_count ?? null,
             'is_following' => (bool) ($this->is_following ?? false),
             'bio' => $this->bio,
-            'avatar_url' => $this->profile_photo_path ? Storage::url($this->profile_photo_path) : null,
+            'avatar_url' => $this->profile_photo_path
+                ? asset('storage/' . $this->profile_photo_path)
+                : null,
         ];
     }
 }
